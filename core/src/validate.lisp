@@ -103,7 +103,7 @@ Otherwise, return a list of conditions raised during loading."
   "Evaluate DIRECTORY's conformance to the TeX Font Metrics format.
 Call INVALIDATE-FONT on every TFM file recursively found in DIRECTORY.
 If all files are valid, return NIL. Otherwise, return a list of the form
-((FILE . REPORTS...) (FILE . REPORTS...) ...)."
+((FILE REPORTS...) (FILE REPORTS...) ...)."
   (uiop:collect-sub*directories directory #'identity #'identity
     (lambda (directory)
       (mapc (lambda (file &aux (conditions (invalidate-font file)))
