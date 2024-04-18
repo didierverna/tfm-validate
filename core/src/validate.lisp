@@ -107,14 +107,19 @@ Otherwise, return a list of conditions raised during loading."
 Call INVALIDATE-FONT on every TFM file recursively found in DIRECTORY.
 Return two values:
 - a list of the form ((FILE CONDITIONS...) (FILE CONDITIONS...) ...)
-  or NIL if all files are conformant,
-- the total number of checked fonts."
+  where FILE is a namestring relative to DIRECTORY, and CONDITIONS are those
+  collected conditions while parsing the font,
+- the total number of checked fonts.
+
+If all files are compliant, the first value is NIL."
   (uiop:collect-sub*directories directory #'identity #'identity
-    (lambda (directory)
+    (lambda (sub-directory)
       (mapc (lambda (file &aux (conditions (invalidate-font file)))
 	      (incf fonts)
-	      (when conditions (push (cons file conditions) reports)))
-	(uiop:directory-files directory "*.tfm"))))
+	      (when conditions
+		(push (cons (enough-namestring file directory) conditions)
+		      reports)))
+	(uiop:directory-files sub-directory "*.tfm"))))
   (values reports fonts))
 
 ;;; validate.lisp ends here
