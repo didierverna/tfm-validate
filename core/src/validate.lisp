@@ -99,16 +99,19 @@ Otherwise, return a list of conditions raised during loading."
 	(tfm:load-font file))))
   (nreverse conditions))
 
-(defun invalidate-directory (directory &aux reports)
+(defun invalidate-directory (directory &aux reports (fonts 0))
   "Evaluate DIRECTORY's conformance to the TeX Font Metrics format.
 Call INVALIDATE-FONT on every TFM file recursively found in DIRECTORY.
-If all files are valid, return NIL. Otherwise, return a list of the form
-((FILE REPORTS...) (FILE REPORTS...) ...)."
+Return two values:
+- a list of the form ((FILE CONDITIONS...) (FILE CONDITIONS...) ...)
+  or NIL if all files are conformant,
+- the total number of checked fonts."
   (uiop:collect-sub*directories directory #'identity #'identity
     (lambda (directory)
       (mapc (lambda (file &aux (conditions (invalidate-font file)))
+	      (incf fonts)
 	      (when conditions (push (cons file conditions) reports)))
 	(uiop:directory-files directory "*.tfm"))))
-  reports)
+  (values reports fonts))
 
 ;;; validate.lisp ends here
