@@ -34,6 +34,9 @@
 If FILE is loaded without any warnings or errors, return NIL.
 Otherwise, return a list of conditions raised during loading."
   (labels ((collect (condition) (push condition conditions))
+	   (collect-and-muffle (condition)
+	     (collect condition)
+	     (invoke-restart 'muffle-warning))
 	   (collect-and-cancel (condition)
 	     (collect condition)
 	     (invoke-restart 'tfm:cancel-loading))
@@ -52,8 +55,8 @@ Otherwise, return a list of conditions raised during loading."
 		    (invoke-restart ',restart))))
       (handler-bind
 	  ;; Warnings.
-	  ((tfm:extended-tfm #'collect)
-	   (tfm:tfm-compliance-warning #'collect)
+	  ((tfm:extended-tfm #'collect-and-muffle)
+	   (tfm:tfm-compliance-warning #'collect-and-muffle)
 	   ;; Non-recoverable errors.
 	   (tfm:file-underflow #'collect-and-cancel)
 	   (tfm:u16-overflow #'collect-and-cancel)
