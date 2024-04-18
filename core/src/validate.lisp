@@ -97,7 +97,7 @@ Otherwise, return a list of conditions raised during loading."
 
 	   )
 	(tfm:load-font file))))
-  conditions)
+  (nreverse conditions))
 
 (defun invalidate-directory (directory &aux reports)
   "Evaluate DIRECTORY's conformance to the TeX Font Metrics format.
