@@ -47,7 +47,10 @@
     :nickname-package
 
     ;; From src/validate.lisp:
-    :invalidate-font :invalidate-directory))
+    :invalidate-font :invalidate-directory
+
+    ;; From src/texlive.lisp:
+    :invalidate-texlive))
 
 
 (in-package :net.didierverna.tfm-validate)

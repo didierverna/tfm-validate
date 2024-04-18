@@ -44,6 +44,9 @@ For a more complete description of TFM Validate, see the
   :components ((:file "package")
 	       (:module "src"
 		:serial t
-		:components ((:file "validate")))))
+		:components ((:file "util")
+			     (:file "validate")
+			     (:file "html")
+			     (:file "texlive")))))
 
 ;;; net.didierverna.tfm-validate.core.asd ends here
