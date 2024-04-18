@@ -29,6 +29,10 @@
 (in-readtable :net.didierverna.tfm-validate)
 
 
+(defun capitalize (string)
+  "Capitalize STRING and substitute dashes with spaces."
+  (nsubstitute #\Space #\- (string-capitalize string)))
+
 (defun renew-directories (&rest directories)
   "Ensure DIRECTORIES exist and empty them."
   (dolist (directory directories)
@@ -144,7 +148,14 @@ Rendering is done on *STANDARD-OUTPUT*."
 		#p"~/tfm-validate/"))
 	 (root (apply #'concatenate 'string
 		      (make-list (count #\/ (car report))
-				 :initial-element "../"))))
+				 :initial-element "../")))
+	 warnings errors)
+    (loop :for condition :in (cdr report)
+	  :if (typep condition 'tfm:tfm-compliance-warning)
+	    :collect condition :into warns
+	  :else
+	    :collect condition :into errs
+	  :finally (setq warnings warns errors errs))
     (ensure-directories-exist file)
     (with-open-file (*standard-output* file
 		     :direction :output
@@ -155,8 +166,20 @@ Rendering is done on *STANDARD-OUTPUT*."
 						*templates-directory*))
 	(pathname-name (car report)) root (pathname-name (car report)) root
 	(namestring (car report))
-	0 0
+	(length warnings) (length errors)
 	cts (version :long) (tfm:version :long))
+      (flet ((report-condition (condition)
+	       (format t "      <h3>~A</h3>~%"
+		 (capitalize (symbol-name (type-of condition))))
+	       (format t "<pre>~%")
+	       (let (*print-escape*) (print-object condition *standard-output*))
+	       (format t "</pre>~%")))
+	(when warnings
+	  (format t "    <h2>Warnings</h2>~%")
+	  (mapc #'report-condition warnings))
+	(when errors
+	  (format t "    <h2>Errors</h2>~%")
+	  (mapc #'report-condition errors)))
       (format t "  </body>~%</html>~%"))))
 
 (defun invalidate-texlive (year)
