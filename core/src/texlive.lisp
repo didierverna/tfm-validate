@@ -46,13 +46,11 @@
        (merge-pathnames style-sheet directory))))
   (values))
 
-(defun render-index-header (year total skipped caught)
+(defun render-index-header (cts year total skipped caught)
   "Render index file's header to standard output."
   (format t (file-contents (merge-pathnames #p"index-header.html"
 					    *templates-directory*))
-    year total skipped caught (current-time-string)
-    (version :long)
-    (tfm:version :long)))
+    year total skipped caught cts (version :long) (tfm:version :long)))
 
 (defun reports-index-character (reports)
   "Return the next index character for REPORTS.
@@ -115,14 +113,14 @@ Rendering is done on *STANDARD-OUTPUT*."
 			  (format t "      </tr>~%")))))
   (values))
 
-(defun build-index-file (year total skipped reports)
+(defun build-index-file (cts year total skipped reports)
   "Build the TeX Live TFM compliance reports index file."
   (with-open-file (*standard-output* #p"~/tfm-validate/index.html"
 		   :direction :output
 		   :if-exists :supersede
 		   :if-does-not-exist :create
 		   :external-format :utf-8)
-    (render-index-header year total skipped (length reports))
+    (render-index-header cts year total skipped (length reports))
     (loop :with index-character := (reports-index-character reports)
 	  :with next-reports := (cdr reports)
 	  :with length := 1
@@ -156,6 +154,7 @@ Rendering is done on *STANDARD-OUTPUT*."
 					(pathname-name (car report)))))
       (renew-directories #p"~/tfm-validate/")
       (copy-style-sheets #p"~/tfm-validate/")
-      (build-index-file year total skipped reports))))
+      (let ((cts (current-time-string)))
+	(build-index-file cts year total skipped reports)))))
 
 ;;; texlive.lisp ends here
