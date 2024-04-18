@@ -137,6 +137,28 @@ Rendering is done on *STANDARD-OUTPUT*."
 			next-reports (cdr reports))))
     (format t "    </table>~%  </body>~%</html>~%")))
 
+(defun render-report (report cts)
+  "Generate HTML file for REPORT."
+  (let* ((file (merge-pathnames
+		(merge-pathnames (make-pathname :type "html") (car report))
+		#p"~/tfm-validate/"))
+	 (root (apply #'concatenate 'string
+		      (make-list (count #\/ (car report))
+				 :initial-element "../"))))
+    (ensure-directories-exist file)
+    (with-open-file (*standard-output* file
+		     :direction :output
+		     :if-exists :supersede
+		     :if-does-not-exist :create
+		     :external-format :utf-8)
+      (format t (file-contents (merge-pathnames #p"report-header.html"
+						*templates-directory*))
+	(pathname-name (car report)) root (pathname-name (car report)) root
+	(namestring (car report))
+	0 0
+	cts (version :long) (tfm:version :long))
+      (format t "  </body>~%</html>~%"))))
+
 (defun invalidate-texlive (year)
   "Evaluate TeX Live YEAR distribution's conformance to the TFM format."
   (multiple-value-bind (reports total)
@@ -155,6 +177,7 @@ Rendering is done on *STANDARD-OUTPUT*."
       (renew-directories #p"~/tfm-validate/")
       (copy-style-sheets #p"~/tfm-validate/")
       (let ((cts (current-time-string)))
-	(build-index-file cts year total skipped reports)))))
+	(build-index-file cts year total skipped reports)
+	(mapc (lambda (report) (render-report report cts)) reports)))))
 
 ;;; texlive.lisp ends here
