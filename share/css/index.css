@@ -1,0 +1,88 @@
+/*
+  index.css --- TFM Validate index pages styles
+
+  Copyright (C) 2018, 2019 EPITA Research and Development Laboratory
+  Copyright (C) 2024 Didier Verna
+
+  Author: Antoine Martin
+  Maintainers: Didier Verna <didier@didierverna.net>
+
+  This file is part of TFM-VALIDATE.
+
+  Permission to use, copy, modify, and distribute this software for any
+  purpose with or without fee is hereby granted, provided that the above
+  copyright notice and this permission notice appear in all copies.
+
+  THIS SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
+  WITH REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF
+  MERCHANTABILITY AND FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
+  ANY SPECIAL, DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
+  WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN
+  ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
+  OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
+*/
+
+@import url(./document.css);
+
+#index-button
+{
+    margin-left: auto;
+    margin-right: auto;
+    text-align: center;
+    padding: 15px;
+}
+
+#index-button a
+{
+    color: black;
+    background-color: lightgrey;
+    font-size: initial;
+    padding: 5px 10px;
+}
+
+#index-button a:hover
+{
+    background-color: grey;
+    text-decoration: none;
+}
+
+.floating
+{
+  position: fixed;
+  top: 0;
+}
+
+.floating table
+{
+  background-color: white;
+  margin: 0px 0px;
+}
+
+.header h4
+{
+  padding: 0px 0px 0px 0px;
+}
+
+.index-cp table
+{
+  margin: 0;
+}
+
+
+/* Index by author. */
+
+.author-entry
+{
+  vertical-align: top;
+}
+
+.author-entry table { width: 100%; }
+
+td.author-name
+{
+  background-color: #F2F2F2;
+  padding-top: 5px;
+  padding-bottom: 1px;
+}
+
+/* index.css ends here */
