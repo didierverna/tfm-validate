@@ -27,4 +27,5 @@ You may also call the function `invalidate-directory` to get TFM compliance
 reports for a whole directory tree.
 
 Finally, call the function `(invalidate-texlive YEAR)` to generate a website
-full of compliance reports. The site is located in `~/tfm-validate/`.
+full of compliance reports. The site is located in `~/tfm-validate/`. See for
+example [this one](https://www.didierverna.net/tfm-validate).
