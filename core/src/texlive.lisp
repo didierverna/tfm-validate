@@ -61,11 +61,13 @@
 ;; Index Rendering
 ;; ==========================================================================
 
-(defun render-index-header (cts year total skipped caught type)
+(defun render-index-header (cts year total skipped caught warnings errors type)
   "Render index file's header to standard output."
   (format t (file-contents (merge-pathnames #p"index-header.html"
 					    *templates-directory*))
-    year total skipped caught cts (version :long) (tfm:version :long) type))
+    year total skipped caught warnings errors cts
+    (version :long) (tfm:version :long)
+    type))
 
 (defun column-lengths (number)
   "Spread NUMBER of entries in 3 different columns as uniformly as possible.
@@ -134,14 +136,15 @@ This is the first (upcased) letter of the first font file name
     (pathname-name (car report))))
 
 ;; #### NOTE: the reports are already sorted.
-(defun build-font-index-file (cts year total skipped reports)
+(defun build-font-index-file
+    (cts year total skipped caught warnings errors reports)
   "Build the TeX Live TFM compliance reports font index file."
   (with-open-file (*standard-output* #p"~/tfm-validate/fonts.html"
 		   :direction :output
 		   :if-exists :supersede
 		   :if-does-not-exist :create
 		   :external-format :utf-8)
-    (render-index-header cts year total skipped (length reports) "Font")
+    (render-index-header cts year total skipped caught warnings errors "Font")
     (loop :with index-character := (reports-index-character reports)
 	  :with next-reports := (cdr reports)
 	  :with length := 1
@@ -187,29 +190,15 @@ Rendering is done on *STANDARD-OUTPUT*."
   (format t "        </table>~%	</td>~%"))
 
 ;; #### NOTE: the reports are already sorted.
-(defun build-issue-index-file (cts year total skipped reports &aux conditions)
+(defun build-issue-index-file
+    (cts year total skipped caught warnings errors conditions)
   "Build the TeX Live TFM compliance reports issue index file."
-  (setq conditions (make-hash-table :test #'eq))
-  (mapc (lambda (report)
-	  (mapc (lambda (condition)
-		  (setf (gethash (type-of condition) conditions)
-			(pushnew (car report)
-				 (gethash (type-of condition) conditions))))
-	    (cdr report)))
-    reports)
-  (setq conditions
-	(sort (loop :for key :being :the :hash-keys :in conditions
-		      :using (hash-value value)
-		    :collect (cons (capitalize (symbol-name key))
-				   (nreverse value)))
-	    #'string-lessp
-	  :key #'car))
   (with-open-file (*standard-output* #p"~/tfm-validate/issues.html"
 		   :direction :output
 		   :if-exists :supersede
 		   :if-does-not-exist :create
 		   :external-format :utf-8)
-    (render-index-header cts year total skipped (length reports) "Issue")
+    (render-index-header cts year total skipped caught warnings errors "Issue")
     (loop :with index-character := (conditions-index-character conditions)
 	  :with next-conditions := (cdr conditions)
 	  :with length := 1
@@ -227,6 +216,7 @@ Rendering is done on *STANDARD-OUTPUT*."
 			index-character next-index-character
 			next-conditions (cdr conditions))))
     (format t "    </table>~%  </body>~%</html>~%")))
+
 
 
 
@@ -306,9 +296,37 @@ Rendering is done on *STANDARD-OUTPUT*."
 		       :external-format :utf-8)
 	(format t "~
 <meta http-equiv=\"refresh\" content=\"0;url=fonts.html\">~%"))
-      (let ((cts (current-time-string)))
-	(build-font-index-file cts year total skipped reports)
-	(build-issue-index-file cts year total skipped reports)
+      ;; #### NOTE: we're creating the data for the issue index here, because
+      ;; it allows us to display all the statistics in both index files, as a
+      ;; general summary..
+      (let ((cts (current-time-string))
+	    (conditions (make-hash-table :test #'eq))
+	    (warnings 0)
+	    (errors 0))
+	(mapc (lambda (report)
+		(mapc (lambda (condition)
+			(setf (gethash (type-of condition) conditions)
+			      (pushnew (car report)
+				       (gethash (type-of condition)
+						conditions))))
+		  (cdr report)))
+	  reports)
+	(setq conditions
+	      (sort (loop :for key :being :the :hash-keys :in conditions
+			    :using (hash-value value)
+			  :if (subtypep key 'tfm:tfm-compliance-warning)
+			    :do (incf warnings)
+			  :else
+			    :do (incf errors)
+			  :collect (cons (capitalize (symbol-name key))
+					 (nreverse value)))
+		  #'string-lessp
+		:key #'car))
+	(let ((caught (length reports)))
+	  (build-font-index-file cts year total skipped caught warnings errors
+				 reports)
+	  (build-issue-index-file cts year total skipped caught warnings errors
+				  conditions))
 	(mapc (lambda (report) (render-report report cts)) reports)))))
 
 ;;; texlive.lisp ends here
