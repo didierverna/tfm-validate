@@ -67,6 +67,58 @@
 					    *templates-directory*))
     year total skipped caught cts (version :long) (tfm:version :long) type))
 
+(defun column-lengths (number)
+  "Spread NUMBER of entries in 3 different columns as uniformly as possible.
+Return the column lengths as 3 values."
+  (multiple-value-bind (quotient remainder) (floor number 3)
+    (case remainder
+      (0 (values quotient quotient quotient))
+      (1 (values (+ quotient 1) quotient quotient))
+      (2 (values (+ quotient 1) (+ quotient 1) quotient)))))
+
+(defun render-index-entry (character entries number renderer)
+  "Render index file's first NUMBER ENTRIES indexes under CHARACTER.
+This function arranges ENTRIES indexes to be rendered in 3 columns, vertically
+from left to right, but taking care of vertical justification as much as
+possible: the heights of the 3 columns may only differ by one, meaning that
+only the last row may have less than 3 entries.
+
+Rendering is done on *STANDARD-OUTPUT* by calling RENDERER for each entry."
+  (format t "~%      <tr><th><a name=\"~A\">~A</a></th></tr>~%"
+    (if (char= character #\#) "other" character)
+    character)
+  (multiple-value-bind (l1 l2 l3) (column-lengths number)
+    (loop :for entries-1 :on entries
+	  :for entries-2 :on (nthcdr l1 entries)
+	  :for entries-3 :on (nthcdr (+ l1 l2) entries)
+	  ;; #### WARNING: do this last so that the report name pointers are
+	  ;; correct in the :FINALLY clause, and even if the :DO clause is not
+	  ;; executed.
+	  :for lines :from 1 :upto l3
+	  ;; #### FIXME: this call still be improved with FORMAT list
+	  ;; arguments for multiple cells
+	  :do (progn
+		(format t "      <tr>~%")
+		(funcall renderer (car entries-1))
+		(funcall renderer (car entries-2))
+		(funcall renderer (car entries-3))
+		(format t "      </tr>~%"))
+	  :finally (cond ((> l1 l2)
+			  (format t "      <tr>~%")
+			  (funcall renderer (car entries-1))
+			  (format t "      </tr>~%"))
+			 ((> l2 l3)
+			  (format t "      <tr>~%")
+			  (funcall renderer (car entries-1))
+			  (funcall renderer (car entries-2))
+			  (format t "      </tr>~%")))))
+  (values))
+
+
+;; --------------------------------------------------------------------------
+;; Report Index
+;; --------------------------------------------------------------------------
+
 (defun reports-index-character (reports)
   "Return the next index character for REPORTS.
 This is the first (upcased) letter of the first font file name
@@ -81,53 +133,7 @@ This is the first (upcased) letter of the first font file name
     (namestring (merge-pathnames html (car report)))
     (pathname-name (car report))))
 
-(defun column-lengths (number)
-  "Spread NUMBER of entries in 3 different columns as uniformly as possible.
-Return the column lengths as 3 values."
-  (multiple-value-bind (quotient remainder) (floor number 3)
-    (case remainder
-      (0 (values quotient quotient quotient))
-      (1 (values (+ quotient 1) quotient quotient))
-      (2 (values (+ quotient 1) (+ quotient 1) quotient)))))
-
-(defun render-index-entry (character reports number)
-  "Render index file's first NUMBER REPORTS indexes under CHARACTER.
-This function arranges REPORTS indexes to be rendered in 3 columns, vertically
-from left to right, but taking care of vertical justification as much as
-possible: the heights of the 3 columns may only differ by one, meaning that
-only the last row may have less than 3 entries.
-
-Rendering is done on *STANDARD-OUTPUT*."
-  (format t "~%      <tr><th><a name=\"~A\">~A</a></th></tr>~%"
-    (if (char= character #\#) "other" character)
-    character)
-  (multiple-value-bind (l1 l2 l3) (column-lengths number)
-    (loop :for reports-1 :on reports
-	  :for reports-2 :on (nthcdr l1 reports)
-	  :for reports-3 :on (nthcdr (+ l1 l2) reports)
-	  ;; #### WARNING: do this last so that the report name pointers are
-	  ;; correct in the :FINALLY clause, and even if the :DO clause is not
-	  ;; executed.
-	  :for lines :from 1 :upto l3
-	  ;; #### FIXME: this call still be improved with FORMAT list
-	  ;; arguments for multiple cells
-	  :do (progn
-		(format t "      <tr>~%")
-		(render-report-index (car reports-1))
-		(render-report-index (car reports-2))
-		(render-report-index (car reports-3))
-		(format t "      </tr>~%"))
-	  :finally (cond ((> l1 l2)
-			  (format t "      <tr>~%")
-			  (render-report-index (car reports-1))
-			  (format t "      </tr>~%"))
-			 ((> l2 l3)
-			  (format t "      <tr>~%")
-			  (render-report-index (car reports-1))
-			  (render-report-index (car reports-2))
-			  (format t "      </tr>~%")))))
-  (values))
-
+;; #### NOTE: the reports are already sorted.
 (defun build-font-index-file (cts year total skipped reports)
   "Build the TeX Live TFM compliance reports font index file."
   (with-open-file (*standard-output* #p"~/tfm-validate/fonts.html"
@@ -145,35 +151,81 @@ Rendering is done on *STANDARD-OUTPUT*."
 	    :do (setq length (1+ length) next-reports (cdr next-reports))
 	  :else
 	    :do (progn
-		  (render-index-entry index-character reports length)
+		  (render-index-entry index-character reports length
+				      #'render-report-index)
 		  (setq length 1
 			reports next-reports
 			index-character next-index-character
 			next-reports (cdr reports))))
     (format t "    </table>~%  </body>~%</html>~%")))
 
-(defun build-issue-index-file (cts year total skipped reports)
+
+;; --------------------------------------------------------------------------
+;; Issue Index
+;; --------------------------------------------------------------------------
+
+;; #### NOTE: condition type names have already been capitalized.
+(defun conditions-index-character (conditions)
+  "Return the next index character for CONDITIONS.
+This is the first letter of the first condition type name in CONDITIONS."
+  (when conditions (aref (car (first conditions)) 0)))
+
+(defun render-condition-index (condition)
+  "Render an index entry for CONDITION.
+CONDITION should be a list of the form (TYPE-NAME REPORT-NAME...).
+Rendering is done on *STANDARD-OUTPUT*."
+  (format t "        <td></td>
+	<td class=\"author-entry\">
+	  <table>
+	    <tr><td class=\"author-name\">~A</td></tr>~%"
+    (car condition))
+  (mapc (lambda (report-name &aux (html (make-pathname :type "html")))
+	  (format t "<tr><td><a href=\"~A\">~A</a></td></tr>~%"
+	    (namestring (merge-pathnames html report-name))
+	    (pathname-name report-name)))
+    (cdr condition))
+  (format t "        </table>~%	</td>~%"))
+
+;; #### NOTE: the reports are already sorted.
+(defun build-issue-index-file (cts year total skipped reports &aux conditions)
   "Build the TeX Live TFM compliance reports issue index file."
+  (setq conditions (make-hash-table :test #'eq))
+  (mapc (lambda (report)
+	  (mapc (lambda (condition)
+		  (setf (gethash (type-of condition) conditions)
+			(pushnew (car report)
+				 (gethash (type-of condition) conditions))))
+	    (cdr report)))
+    reports)
+  (setq conditions
+	(sort (loop :for key :being :the :hash-keys :in conditions
+		      :using (hash-value value)
+		    :collect (cons (capitalize (symbol-name key))
+				   (nreverse value)))
+	    #'string-lessp
+	  :key #'car))
   (with-open-file (*standard-output* #p"~/tfm-validate/issues.html"
 		   :direction :output
 		   :if-exists :supersede
 		   :if-does-not-exist :create
 		   :external-format :utf-8)
     (render-index-header cts year total skipped (length reports) "Issue")
-    (loop :with index-character := (reports-index-character reports)
-	  :with next-reports := (cdr reports)
+    (loop :with index-character := (conditions-index-character conditions)
+	  :with next-conditions := (cdr conditions)
 	  :with length := 1
-	  :while reports
-	  :for next-index-character := (reports-index-character next-reports)
-	  :if (and next-reports (char= index-character next-index-character))
-	    :do (setq length (1+ length) next-reports (cdr next-reports))
+	  :while conditions
+	  :for next-index-character
+	    := (conditions-index-character next-conditions)
+	  :if (and next-conditions (char= index-character next-index-character))
+	    :do (setq length (1+ length) next-conditions (cdr next-conditions))
 	  :else
 	    :do (progn
-		  (render-index-entry index-character reports length)
+		  (render-index-entry index-character conditions length
+				      #'render-condition-index)
 		  (setq length 1
-			reports next-reports
+			conditions next-conditions
 			index-character next-index-character
-			next-reports (cdr reports))))
+			next-conditions (cdr conditions))))
     (format t "    </table>~%  </body>~%</html>~%")))
 
 
