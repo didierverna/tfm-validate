@@ -116,6 +116,40 @@ Rendering is done on *STANDARD-OUTPUT* by calling RENDERER for each entry."
 			  (format t "      </tr>~%")))))
   (values))
 
+;; #### NOTE: the reports are already sorted.
+(defun build-index-file
+    (type cts year total skipped caught warnings errors entries
+     index-character-getter index-entry-renderer)
+  "Build the TeX Live TFM compliance reports TYPE index file."
+  (with-open-file (*standard-output*
+		   (merge-pathnames
+		    (make-pathname :name (concatenate 'string type "s")
+				   :type "html")
+		    #p"~/tfm-validate/")
+		   :direction :output
+		   :if-exists :supersede
+		   :if-does-not-exist :create
+		   :external-format :utf-8)
+    (render-index-header cts year total skipped caught warnings errors
+			 (capitalize type))
+    (loop :with index-character := (funcall index-character-getter entries)
+	  :with next-entries := (cdr entries)
+	  :with length := 1
+	  :while entries
+	  :for next-index-character
+	    := (funcall index-character-getter next-entries)
+	  :if (and next-entries (char= index-character next-index-character))
+	    :do (setq length (1+ length) next-entries (cdr next-entries))
+	  :else
+	    :do (progn
+		  (render-index-entry index-character entries length
+				      index-entry-renderer)
+		  (setq length 1
+			entries next-entries
+			index-character next-index-character
+			next-entries (cdr entries))))
+    (format t "    </table>~%  </body>~%</html>~%")))
+
 
 ;; --------------------------------------------------------------------------
 ;; Report Index
@@ -134,33 +168,6 @@ This is the first (upcased) letter of the first font file name
   (format t "	<td></td><td><a href=\"~A\">~A</a></td>~%"
     (namestring (merge-pathnames html (car report)))
     (pathname-name (car report))))
-
-;; #### NOTE: the reports are already sorted.
-(defun build-font-index-file
-    (cts year total skipped caught warnings errors reports)
-  "Build the TeX Live TFM compliance reports font index file."
-  (with-open-file (*standard-output* #p"~/tfm-validate/fonts.html"
-		   :direction :output
-		   :if-exists :supersede
-		   :if-does-not-exist :create
-		   :external-format :utf-8)
-    (render-index-header cts year total skipped caught warnings errors "Font")
-    (loop :with index-character := (reports-index-character reports)
-	  :with next-reports := (cdr reports)
-	  :with length := 1
-	  :while reports
-	  :for next-index-character := (reports-index-character next-reports)
-	  :if (and next-reports (char= index-character next-index-character))
-	    :do (setq length (1+ length) next-reports (cdr next-reports))
-	  :else
-	    :do (progn
-		  (render-index-entry index-character reports length
-				      #'render-report-index)
-		  (setq length 1
-			reports next-reports
-			index-character next-index-character
-			next-reports (cdr reports))))
-    (format t "    </table>~%  </body>~%</html>~%")))
 
 
 ;; --------------------------------------------------------------------------
@@ -188,34 +195,6 @@ Rendering is done on *STANDARD-OUTPUT*."
 	    (pathname-name report-name)))
     (cdr condition))
   (format t "        </table>~%	</td>~%"))
-
-;; #### NOTE: the reports are already sorted.
-(defun build-issue-index-file
-    (cts year total skipped caught warnings errors conditions)
-  "Build the TeX Live TFM compliance reports issue index file."
-  (with-open-file (*standard-output* #p"~/tfm-validate/issues.html"
-		   :direction :output
-		   :if-exists :supersede
-		   :if-does-not-exist :create
-		   :external-format :utf-8)
-    (render-index-header cts year total skipped caught warnings errors "Issue")
-    (loop :with index-character := (conditions-index-character conditions)
-	  :with next-conditions := (cdr conditions)
-	  :with length := 1
-	  :while conditions
-	  :for next-index-character
-	    := (conditions-index-character next-conditions)
-	  :if (and next-conditions (char= index-character next-index-character))
-	    :do (setq length (1+ length) next-conditions (cdr next-conditions))
-	  :else
-	    :do (progn
-		  (render-index-entry index-character conditions length
-				      #'render-condition-index)
-		  (setq length 1
-			conditions next-conditions
-			index-character next-index-character
-			next-conditions (cdr conditions))))
-    (format t "    </table>~%  </body>~%</html>~%")))
 
 
 
@@ -323,10 +302,12 @@ Rendering is done on *STANDARD-OUTPUT*."
 		  #'string-lessp
 		:key #'car))
 	(let ((caught (length reports)))
-	  (build-font-index-file cts year total skipped caught warnings errors
-				 reports)
-	  (build-issue-index-file cts year total skipped caught warnings errors
-				  conditions))
+	  (build-index-file
+	   "font" cts year total skipped caught warnings errors reports
+	   #'reports-index-character #'render-report-index)
+	  (build-index-file
+	   "issue" cts year total skipped caught warnings errors conditions
+	   #'conditions-index-character #'render-condition-index))
 	(mapc (lambda (report) (render-report report cts)) reports)))))
 
 ;;; texlive.lisp ends here
