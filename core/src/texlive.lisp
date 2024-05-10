@@ -29,6 +29,10 @@
 (in-readtable :net.didierverna.tfm-validate)
 
 
+;; ==========================================================================
+;; Utilities
+;; ==========================================================================
+
 (defun capitalize (string)
   "Capitalize STRING and substitute dashes with spaces."
   (nsubstitute #\Space #\- (string-capitalize string)))
@@ -50,11 +54,18 @@
        (merge-pathnames style-sheet directory))))
   (values))
 
-(defun render-index-header (cts year total skipped caught)
+
+
+
+;; ==========================================================================
+;; Index Rendering
+;; ==========================================================================
+
+(defun render-index-header (cts year total skipped caught type)
   "Render index file's header to standard output."
   (format t (file-contents (merge-pathnames #p"index-header.html"
 					    *templates-directory*))
-    year total skipped caught cts (version :long) (tfm:version :long)))
+    year total skipped caught cts (version :long) (tfm:version :long) type))
 
 (defun reports-index-character (reports)
   "Return the next index character for REPORTS.
@@ -124,7 +135,7 @@ Rendering is done on *STANDARD-OUTPUT*."
 		   :if-exists :supersede
 		   :if-does-not-exist :create
 		   :external-format :utf-8)
-    (render-index-header cts year total skipped (length reports))
+    (render-index-header cts year total skipped (length reports) "Font")
     (loop :with index-character := (reports-index-character reports)
 	  :with next-reports := (cdr reports)
 	  :with length := 1
@@ -140,6 +151,36 @@ Rendering is done on *STANDARD-OUTPUT*."
 			index-character next-index-character
 			next-reports (cdr reports))))
     (format t "    </table>~%  </body>~%</html>~%")))
+
+(defun build-issue-index-file (cts year total skipped reports)
+  "Build the TeX Live TFM compliance reports issue index file."
+  (with-open-file (*standard-output* #p"~/tfm-validate/issues.html"
+		   :direction :output
+		   :if-exists :supersede
+		   :if-does-not-exist :create
+		   :external-format :utf-8)
+    (render-index-header cts year total skipped (length reports) "Issue")
+    (loop :with index-character := (reports-index-character reports)
+	  :with next-reports := (cdr reports)
+	  :with length := 1
+	  :while reports
+	  :for next-index-character := (reports-index-character next-reports)
+	  :if (and next-reports (char= index-character next-index-character))
+	    :do (setq length (1+ length) next-reports (cdr next-reports))
+	  :else
+	    :do (progn
+		  (render-index-entry index-character reports length)
+		  (setq length 1
+			reports next-reports
+			index-character next-index-character
+			next-reports (cdr reports))))
+    (format t "    </table>~%  </body>~%</html>~%")))
+
+
+
+;; ==========================================================================
+;; Report Rendering
+;; ==========================================================================
 
 (defun render-report (report cts)
   "Generate HTML file for REPORT."
@@ -182,6 +223,13 @@ Rendering is done on *STANDARD-OUTPUT*."
 	  (mapc #'report-condition errors)))
       (format t "  </body>~%</html>~%"))))
 
+
+
+
+;; ==========================================================================
+;; Entry Point
+;; ==========================================================================
+
 (defun invalidate-texlive (year)
   "Evaluate TeX Live YEAR distribution's conformance to the TFM format."
   (multiple-value-bind (reports total)
@@ -208,6 +256,7 @@ Rendering is done on *STANDARD-OUTPUT*."
 <meta http-equiv=\"refresh\" content=\"0;url=fonts.html\">~%"))
       (let ((cts (current-time-string)))
 	(build-font-index-file cts year total skipped reports)
+	(build-issue-index-file cts year total skipped reports)
 	(mapc (lambda (report) (render-report report cts)) reports)))))
 
 ;;; texlive.lisp ends here
