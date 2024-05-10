@@ -116,7 +116,7 @@ Rendering is done on *STANDARD-OUTPUT* by calling RENDERER for each entry."
 			  (format t "      </tr>~%")))))
   (values))
 
-;; #### NOTE: the reports are already sorted.
+;; #### NOTE: the entries are already sorted.
 (defun build-index-file
     (type cts year total skipped caught warnings errors entries
      index-character-getter index-entry-renderer)
