@@ -117,9 +117,9 @@ Rendering is done on *STANDARD-OUTPUT*."
 			  (format t "      </tr>~%")))))
   (values))
 
-(defun build-index-file (cts year total skipped reports)
-  "Build the TeX Live TFM compliance reports index file."
-  (with-open-file (*standard-output* #p"~/tfm-validate/index.html"
+(defun build-font-index-file (cts year total skipped reports)
+  "Build the TeX Live TFM compliance reports font index file."
+  (with-open-file (*standard-output* #p"~/tfm-validate/fonts.html"
 		   :direction :output
 		   :if-exists :supersede
 		   :if-does-not-exist :create
@@ -199,8 +199,15 @@ Rendering is done on *STANDARD-OUTPUT*."
 					(pathname-name (car report)))))
       (renew-directories #p"~/tfm-validate/")
       (copy-style-sheets #p"~/tfm-validate/")
+      (with-open-file (*standard-output* "~/tfm-validate/index.html"
+		       :direction :output
+		       :if-exists :supersede
+		       :if-does-not-exist :create
+		       :external-format :utf-8)
+	(format t "~
+<meta http-equiv=\"refresh\" content=\"0;url=fonts.html\">~%"))
       (let ((cts (current-time-string)))
-	(build-index-file cts year total skipped reports)
+	(build-font-index-file cts year total skipped reports)
 	(mapc (lambda (report) (render-report report cts)) reports)))))
 
 ;;; texlive.lisp ends here
