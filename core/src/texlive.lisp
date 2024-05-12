@@ -118,14 +118,15 @@ Rendering is done on *STANDARD-OUTPUT* by calling RENDERER for each entry."
 
 ;; #### NOTE: the entries are already sorted.
 (defun build-index-file
-    (type cts year total skipped caught warnings errors entries
+    (type output-directory
+     cts year total skipped caught warnings errors entries
      index-character-getter index-entry-renderer)
   "Build the TeX Live TFM compliance reports TYPE index file."
   (with-open-file (*standard-output*
 		   (merge-pathnames
 		    (make-pathname :name (concatenate 'string type "s")
 				   :type "html")
-		    #p"~/tfm-validate/")
+		    output-directory)
 		   :direction :output
 		   :if-exists :supersede
 		   :if-does-not-exist :create
@@ -203,11 +204,11 @@ Rendering is done on *STANDARD-OUTPUT*."
 ;; Report Rendering
 ;; ==========================================================================
 
-(defun render-report (report cts)
+(defun render-report (report output-directory cts)
   "Generate HTML file for REPORT."
   (let* ((file (merge-pathnames
 		(merge-pathnames (make-pathname :type "html") (car report))
-		#p"~/tfm-validate/"))
+		output-directory))
 	 (root (apply #'concatenate 'string
 		      (make-list (count #\/ (car report))
 				 :initial-element "../")))
@@ -251,8 +252,13 @@ Rendering is done on *STANDARD-OUTPUT*."
 ;; Entry Point
 ;; ==========================================================================
 
-(defun invalidate-texlive (year)
-  "Evaluate TeX Live YEAR distribution's conformance to the TFM format."
+(defun invalidate-texlive
+    (year
+     &key (output-directory
+	   (merge-pathnames #p"tfm-validate/" (user-homedir-pathname))))
+  "Evaluate TeX Live YEAR distribution's conformance to the TFM format.
+Generate a compliance reports website under OUTPUT-DIRECTORY (~/tfm-validate/
+by default)."
   (multiple-value-bind (reports total)
       (invalidate-directory
        (format nil "/usr/local/texlive/~A/texmf-dist/fonts/tfm/" year))
@@ -266,9 +272,12 @@ Rendering is done on *STANDARD-OUTPUT*."
       (setq reports (stable-sort reports #'string-lessp
 				 :key (lambda (report)
 					(pathname-name (car report)))))
-      (renew-directories #p"~/tfm-validate/")
-      (copy-style-sheets #p"~/tfm-validate/")
-      (with-open-file (*standard-output* "~/tfm-validate/index.html"
+      (renew-directories output-directory)
+      (copy-style-sheets output-directory)
+      (with-open-file (*standard-output*
+		       (merge-pathnames
+			(make-pathname :name "index" :type "html")
+			output-directory)
 		       :direction :output
 		       :if-exists :supersede
 		       :if-does-not-exist :create
@@ -303,11 +312,14 @@ Rendering is done on *STANDARD-OUTPUT*."
 		:key #'car))
 	(let ((caught (length reports)))
 	  (build-index-file
-	   "font" cts year total skipped caught warnings errors reports
+	   "font" output-directory
+	   cts year total skipped caught warnings errors reports
 	   #'reports-index-character #'render-report-index)
 	  (build-index-file
-	   "issue" cts year total skipped caught warnings errors conditions
+	   "issue" output-directory
+	   cts year total skipped caught warnings errors conditions
 	   #'conditions-index-character #'render-condition-index))
-	(mapc (lambda (report) (render-report report cts)) reports)))))
+	(mapc (lambda (report) (render-report report output-directory cts))
+	  reports)))))
 
 ;;; texlive.lisp ends here
