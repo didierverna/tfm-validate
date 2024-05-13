@@ -254,14 +254,18 @@ Rendering is done on *STANDARD-OUTPUT*."
 
 (defun invalidate-texlive
     (year
-     &key (output-directory
+     &key (texlive-directory #p"/usr/local/texlive/")
+	  (output-directory
 	   (merge-pathnames #p"tfm-validate/" (user-homedir-pathname))))
-  "Evaluate TeX Live YEAR distribution's conformance to the TFM format.
-Generate a compliance reports website under OUTPUT-DIRECTORY (~/tfm-validate/
-by default)."
+  "Evaluate TeXlive YEAR distribution's conformance to the TFM format.
+The TeXlive distribution is found in TEXLIVE-DIRECTORY/YEAR
+(/usr/local/texlive/YEAR by default). This function generates a compliance
+reports website in OUTPUT-DIRECTORY (~/tfm-validate/ by default)."
   (multiple-value-bind (reports total)
       (invalidate-directory
-       (format nil "/usr/local/texlive/~A/texmf-dist/fonts/tfm/" year))
+       (namestring (merge-pathnames
+		       (format nil "~A/texmf-dist/fonts/tfm/" year)
+		     texlive-directory)))
     (let ((skipped 0))
       (loop :for report :in reports
 	    :if (typep (second report) 'tfm:extended-tfm)
