@@ -252,20 +252,12 @@ Rendering is done on *STANDARD-OUTPUT*."
 ;; Entry Point
 ;; ==========================================================================
 
-(defun invalidate-texlive
-    (year
-     &key (texlive-directory #p"/usr/local/texlive/")
-	  (output-directory
-	   (merge-pathnames #p"tfm-validate/" (user-homedir-pathname))))
-  "Evaluate TeXlive YEAR distribution's conformance to the TFM format.
-The TeXlive distribution is found in TEXLIVE-DIRECTORY/YEAR
-(/usr/local/texlive/YEAR by default). This function generates a compliance
-reports website in OUTPUT-DIRECTORY (~/tfm-validate/ by default)."
+(defun invalidate-texlive-directory (directory output-directory)
+  "Evaluate TeXlive DIRECTORY's conformance to the TFM format.
+Generate a compliance reports website in OUTPUT-DIRECTORY.
+The fonts are found in DIRECTORY/fonts/tfm/."
   (multiple-value-bind (reports total)
-      (invalidate-directory
-       (namestring (merge-pathnames
-		       (format nil "~A/texmf-dist/fonts/tfm/" year)
-		     texlive-directory)))
+      (invalidate-directory (merge-pathnames #p"fonts/tfm/" directory))
     (let ((skipped 0))
       (loop :for report :in reports
 	    :if (typep (second report) 'tfm:extended-tfm)
@@ -325,5 +317,68 @@ reports website in OUTPUT-DIRECTORY (~/tfm-validate/ by default)."
 	   #'conditions-index-character #'render-condition-index))
 	(mapc (lambda (report) (render-report report output-directory cts))
 	  reports)))))
+
+(defun invalidate-texlive
+    (&key (root nil rootp)
+	  (fonts :dist)
+	  (year (multiple-value-bind (result ignore status)
+		    (uiop:run-program "kpsewhich -var-value SELFAUTOPARENT"
+		    :output :string :ignore-error-status t)
+		  (declare (ignore ignore))
+		  (if (zerop status)
+		    ;; There's a newline at the end.
+		    (subseq result (1+ (position #\/ result :from-end t))
+		      (1- (length result)))
+		    (multiple-value-bind (s mi h d mo year)
+			(decode-universal-time (get-universal-time))
+		      (declare (ignore s mi h d mo))
+		      year))))
+	  (directory nil directoryp)
+	  (output-directory
+	   (merge-pathnames #p"tfm-validate/" (user-homedir-pathname))))
+  "Evaluate a TeXlive installation's conformance to the TFM format.
+Generate a compliance reports website in OUTPUT-DIRECTORY
+(~/tfm-validate/ by default).
+
+The fonts checked by this function must be located in DIRECTORY/fonts/tfm/.
+If DIRECTORY is not provided, the location is determined as follows.
+
+- The TeXlive installation's root directory may be specified by ROOT.
+  Otherwise, it is determined by calling 'kpsewhich', and if that fails, it
+  defaults to /usr/local/texlive/.
+- The TeXlive installation's year directory may be specified by YEAR.
+  Otherwise, it is determined by calling 'kpsewhich', and if that fails, it
+  defaults to the current year.
+- The specific fonts to check is specified by FONTS, as follows.
+  * A value of :local means ROOT/texmf-local/.
+  * A value of :var means ROOT/YEAR/texmf-var/.
+  * A value of :dist (the default) means ROOT/YEAR/texmf-dist/."
+  (cond
+    (directoryp
+     (check-type directory string)
+     (unless (char= (aref directory (1- (length directory))) #\/)
+       (setq directory (concatenate 'string directory "/"))))
+    (t
+     (cond
+       (rootp
+	(check-type root string)
+	(unless (char= (aref root (1- (length root))) #\/)
+	  (setq root (concatenate 'string root "/"))))
+       (t
+	(setq root
+	      (multiple-value-bind (result ignore status)
+		  (uiop:run-program "kpsewhich -var-value SELFAUTOGRANDPARENT"
+		    :output :string :ignore-error-status t)
+		(declare (ignore ignore))
+		(if (zerop status)
+		  ;; There's a newline at the end, but no slash.
+		  (nsubstitute #\/ #\Newline result)
+		  "/usr/local/texlive/")))))
+     (setq directory
+	   (case fonts
+	     (:local (concatenate 'string root "texmf-local/"))
+	     (:var (format nil "~A~A/texmf-var/" root year))
+	     (:dist (format nil "~A~A/texmf-dist/" root year))))))
+  (invalidate-texlive-directory directory output-directory))
 
 ;;; texlive.lisp ends here
