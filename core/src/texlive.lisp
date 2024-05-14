@@ -252,9 +252,10 @@ Rendering is done on *STANDARD-OUTPUT*."
 ;; Entry Point
 ;; ==========================================================================
 
-(defun invalidate-texlive-directory (directory output-directory)
+(defun invalidate-texlive-directory (directory output-directory header)
   "Evaluate TeXlive DIRECTORY's conformance to the TFM format.
 Generate a compliance reports website in OUTPUT-DIRECTORY.
+Advertise TeXlive information with HEADER in index files.
 The fonts are found in DIRECTORY/fonts/tfm/."
   (multiple-value-bind (reports total)
       (invalidate-directory (merge-pathnames #p"fonts/tfm/" directory))
@@ -309,11 +310,11 @@ The fonts are found in DIRECTORY/fonts/tfm/."
 	(let ((caught (length reports)))
 	  (build-index-file
 	   "font" output-directory
-	   cts year total skipped caught warnings errors reports
+	   cts header total skipped caught warnings errors reports
 	   #'reports-index-character #'render-report-index)
 	  (build-index-file
 	   "issue" output-directory
-	   cts year total skipped caught warnings errors conditions
+	   cts header total skipped caught warnings errors conditions
 	   #'conditions-index-character #'render-condition-index))
 	(mapc (lambda (report) (render-report report output-directory cts))
 	  reports)))))
@@ -335,7 +336,8 @@ The fonts are found in DIRECTORY/fonts/tfm/."
 		      year))))
 	  (directory nil directoryp)
 	  (output-directory
-	   (merge-pathnames #p"tfm-validate/" (user-homedir-pathname))))
+	   (merge-pathnames #p"tfm-validate/" (user-homedir-pathname)))
+     &aux header)
   "Evaluate a TeXlive installation's conformance to the TFM format.
 Generate a compliance reports website in OUTPUT-DIRECTORY
 (~/tfm-validate/ by default).
@@ -357,7 +359,8 @@ If DIRECTORY is not provided, the location is determined as follows.
     (directoryp
      (check-type directory string)
      (unless (char= (aref directory (1- (length directory))) #\/)
-       (setq directory (concatenate 'string directory "/"))))
+       (setq directory (concatenate 'string directory "/")))
+     (setq header directory))
     (t
      (cond
        (rootp
@@ -374,11 +377,11 @@ If DIRECTORY is not provided, the location is determined as follows.
 		  ;; There's a newline at the end, but no slash.
 		  (nsubstitute #\/ #\Newline result)
 		  "/usr/local/texlive/")))))
-     (setq directory
-	   (case fonts
-	     (:local (concatenate 'string root "texmf-local/"))
-	     (:var (format nil "~A~A/texmf-var/" root year))
-	     (:dist (format nil "~A~A/texmf-dist/" root year))))))
-  (invalidate-texlive-directory directory output-directory))
+     (setq header (case fonts
+		    (:local "texmf-local/")
+		    (:var (format nil "~A/texmf-var/" year))
+		    (:dist (format nil "~A/texmf-dist/" year))))
+     (setq directory (format nil "~A~A" root header))))
+  (invalidate-texlive-directory directory output-directory header))
 
 ;;; texlive.lisp ends here
