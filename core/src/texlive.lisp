@@ -319,6 +319,13 @@ The fonts are found in DIRECTORY/fonts/tfm/."
 	(mapc (lambda (report) (render-report report output cts))
 	  reports)))))
 
+(defun check-dirname (string)
+  "Make sure that STRING ends with a slash. Return checked STRING."
+  (check-type string string)
+  (unless (char= (aref string (1- (length string))) #\/)
+    (setq string (concatenate 'string string "/")))
+  string)
+
 (defun invalidate-texlive
     (&key (root nil rootp)
 	  (fonts :dist)
@@ -336,7 +343,9 @@ The fonts are found in DIRECTORY/fonts/tfm/."
 		      (declare (ignore s mi h d mo))
 		      year))))
 	  (directory nil directoryp)
-	  (output (merge-pathnames #p"tfm-validate/" (user-homedir-pathname)))
+	  (output
+	   (merge-pathnames #p"tfm-validate/" (user-homedir-pathname))
+	   outputp)
      &aux header)
   "Evaluate a TeXlive installation's conformance to the TFM format.
 Generate a compliance reports website in OUTPUT directory
@@ -355,18 +364,15 @@ If DIRECTORY is not provided, the location is determined as follows.
   * A value of :local means ROOT/texmf-local/.
   * A value of :var means ROOT/YEAR/texmf-var/.
   * A value of :dist (the default) means ROOT/YEAR/texmf-dist/."
+  (when outputp (setq output (check-dirname output)))
   (cond
     (directoryp
-     (check-type directory string)
-     (unless (char= (aref directory (1- (length directory))) #\/)
-       (setq directory (concatenate 'string directory "/")))
+     (setq directory (check-dirname directory))
      (setq header directory))
     (t
      (cond
        (rootp
-	(check-type root string)
-	(unless (char= (aref root (1- (length root))) #\/)
-	  (setq root (concatenate 'string root "/"))))
+	(setq root (check-dirname root)))
        (t
 	(setq root
 	      (multiple-value-bind (result ignore status)
