@@ -322,6 +322,7 @@ The fonts are found in DIRECTORY/fonts/tfm/."
 (defun invalidate-texlive
     (&key (root nil rootp)
 	  (fonts :dist)
+	  ;; Used in FORMAT: conveniently, may be a string or a number.
 	  (year (multiple-value-bind (result ignore status)
 		    (uiop:run-program "kpsewhich -var-value SELFAUTOPARENT"
 		    :output :string :ignore-error-status t)
