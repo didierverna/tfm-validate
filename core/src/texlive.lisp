@@ -204,11 +204,11 @@ Rendering is done on *STANDARD-OUTPUT*."
 ;; Report Rendering
 ;; ==========================================================================
 
-(defun render-report (report output-directory cts)
+(defun render-report (report output cts)
   "Generate HTML file for REPORT."
   (let* ((file (merge-pathnames
-		(merge-pathnames (make-pathname :type "html") (car report))
-		output-directory))
+		   (merge-pathnames (make-pathname :type "html") (car report))
+		 output))
 	 (root (apply #'concatenate 'string
 		      (make-list (count #\/ (car report))
 				 :initial-element "../")))
@@ -252,9 +252,9 @@ Rendering is done on *STANDARD-OUTPUT*."
 ;; Entry Point
 ;; ==========================================================================
 
-(defun invalidate-texlive-directory (directory output-directory header)
+(defun invalidate-texlive-directory (directory output header)
   "Evaluate TeXlive DIRECTORY's conformance to the TFM format.
-Generate a compliance reports website in OUTPUT-DIRECTORY.
+Generate a compliance reports website in OUTPUT directory.
 Advertise TeXlive information with HEADER in index files.
 The fonts are found in DIRECTORY/fonts/tfm/."
   (multiple-value-bind (reports total)
@@ -269,12 +269,12 @@ The fonts are found in DIRECTORY/fonts/tfm/."
       (setq reports (stable-sort reports #'string-lessp
 				 :key (lambda (report)
 					(pathname-name (car report)))))
-      (renew-directories output-directory)
-      (copy-style-sheets output-directory)
+      (renew-directories output)
+      (copy-style-sheets output)
       (with-open-file (*standard-output*
 		       (merge-pathnames
-			(make-pathname :name "index" :type "html")
-			output-directory)
+			   (make-pathname :name "index" :type "html")
+			 output)
 		       :direction :output
 		       :if-exists :supersede
 		       :if-does-not-exist :create
@@ -309,14 +309,14 @@ The fonts are found in DIRECTORY/fonts/tfm/."
 		:key #'car))
 	(let ((caught (length reports)))
 	  (build-index-file
-	   "font" output-directory
+	   "font" output
 	   cts header total skipped caught warnings errors reports
 	   #'reports-index-character #'render-report-index)
 	  (build-index-file
-	   "issue" output-directory
+	   "issue" output
 	   cts header total skipped caught warnings errors conditions
 	   #'conditions-index-character #'render-condition-index))
-	(mapc (lambda (report) (render-report report output-directory cts))
+	(mapc (lambda (report) (render-report report output cts))
 	  reports)))))
 
 (defun invalidate-texlive
@@ -335,11 +335,10 @@ The fonts are found in DIRECTORY/fonts/tfm/."
 		      (declare (ignore s mi h d mo))
 		      year))))
 	  (directory nil directoryp)
-	  (output-directory
-	   (merge-pathnames #p"tfm-validate/" (user-homedir-pathname)))
+	  (output (merge-pathnames #p"tfm-validate/" (user-homedir-pathname)))
      &aux header)
   "Evaluate a TeXlive installation's conformance to the TFM format.
-Generate a compliance reports website in OUTPUT-DIRECTORY
+Generate a compliance reports website in OUTPUT directory
 (~/tfm-validate/ by default).
 
 The fonts checked by this function must be located in DIRECTORY/fonts/tfm/.
@@ -377,11 +376,11 @@ If DIRECTORY is not provided, the location is determined as follows.
 		  ;; There's a newline at the end, but no slash.
 		  (nsubstitute #\/ #\Newline result)
 		  "/usr/local/texlive/")))))
-     (setq header (case fonts
+     (setq header (ecase fonts
 		    (:local "texmf-local/")
 		    (:var (format nil "~A/texmf-var/" year))
 		    (:dist (format nil "~A/texmf-dist/" year))))
      (setq directory (format nil "~A~A" root header))))
-  (invalidate-texlive-directory directory output-directory header))
+  (invalidate-texlive-directory directory output header))
 
 ;;; texlive.lisp ends here
