@@ -73,8 +73,8 @@ Otherwise, return a list of conditions raised during loading."
 	   (tfm:invalid-ligature-opcode #'collect-and-discard-ligature)
 	   (tfm:ligature-cycle #'collect-and-discard-ligature)
 	   (tfm:invalid-design-size (collect-and-restart-with tfm:set-to-ten))
-	   (tfm:invalid-bcpl-string #'collect-and-discard-string)
-	   (tfm:invalid-string-length #'collect-and-discard-string)
+	   (tfm:invalid-padded-string #'collect-and-discard-string)
+	   (tfm:invalid-padded-string-length #'collect-and-discard-string)
 	   (tfm:no-boundary-character
 	     (collect-and-restart-with tfm:abort-lig/kern-program))
 	   ;; Ambiguous errors.
