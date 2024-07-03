@@ -119,8 +119,8 @@ Rendering is done on *STANDARD-OUTPUT* by calling RENDERER for each entry."
 ;; #### NOTE: the entries are already sorted.
 (defun build-index-file
     (type output-directory
-     cts year total skipped caught warnings errors entries
-     index-character-getter index-entry-renderer)
+     title cts year total skipped caught warnings errors
+     entries index-character-getter index-entry-renderer)
   "Build the TeX Live TFM compliance reports TYPE index file."
   (with-open-file (*standard-output*
 		   (merge-pathnames
@@ -131,8 +131,7 @@ Rendering is done on *STANDARD-OUTPUT* by calling RENDERER for each entry."
 		   :if-exists :supersede
 		   :if-does-not-exist :create
 		   :external-format :utf-8)
-    (render-index-header cts year total skipped caught warnings errors
-			 (capitalize type))
+    (render-index-header cts year total skipped caught warnings errors title)
     (loop :with index-character := (funcall index-character-getter entries)
 	  :with next-entries := (cdr entries)
 	  :with length := 1
@@ -310,12 +309,12 @@ The fonts are found in DIRECTORY/fonts/tfm/."
 	(let ((caught (length reports)))
 	  (build-index-file
 	   "font" output
-	   cts header total skipped caught warnings errors reports
-	   #'reports-index-character #'render-report-index)
+	   "Non Compliant Fonts" cts header total skipped caught warnings errors
+	   reports #'reports-index-character #'render-report-index)
 	  (build-index-file
 	   "issue" output
-	   cts header total skipped caught warnings errors conditions
-	   #'conditions-index-character #'render-condition-index))
+	   "Issues" cts header total skipped caught warnings errors
+	   conditions #'conditions-index-character #'render-condition-index))
 	(mapc (lambda (report) (render-report report output cts))
 	  reports)))))
 
