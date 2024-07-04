@@ -41,7 +41,7 @@
 (defparameter *release-major-level* 1
   "The major level of this release.")
 
-(defparameter *release-minor-level* 0
+(defparameter *release-minor-level* 1
   "The minor level of this release.")
 
 (defparameter *release-status* :patchlevel
@@ -50,7 +50,7 @@
 (defparameter *release-status-level* 0
   "The status level of this release.")
 
-(defparameter *release-name* "QT Beckman"
+(defparameter *release-name* "QT Cloistered Monk"
   "The name of this release.
 The general naming theme for TFM Validate is \"Blackletter Fonts\",
 from the LaTeX Font Catalogue.

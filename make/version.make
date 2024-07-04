@@ -1,3 +1,3 @@
-LONG_VERSION    := 1.0 "QT Beckman"
-SHORT_VERSION   := 1.0
+LONG_VERSION    := 1.1 "QT Cloistered Monk"
+SHORT_VERSION   := 1.1
 COPYRIGHT_YEARS := 2024
