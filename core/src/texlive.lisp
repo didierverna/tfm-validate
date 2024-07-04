@@ -226,7 +226,7 @@ Rendering is done on *STANDARD-OUTPUT*."
 		     :external-format :utf-8)
       (format t (file-contents (merge-pathnames #p"report-header.html"
 						*templates-directory*))
-	(pathname-name (car report)) root (pathname-name (car report)) root
+	root (pathname-name (car report)) (pathname-name (car report)) root
 	(namestring (car report))
 	(length warnings) (length errors)
 	cts (version :long) (tfm:version :long))
