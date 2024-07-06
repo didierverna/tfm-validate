@@ -57,6 +57,7 @@ Otherwise, return a list of conditions raised during loading."
 	  ;; Warnings.
 	  ((tfm:extended-tfm #'collect-and-muffle)
 	   (tfm:tfm-compliance-warning #'collect-and-muffle)
+	   (tfm:spurious-char-info #'collect-and-muffle)
 	   ;; Non-recoverable errors.
 	   (tfm:file-underflow #'collect-and-cancel)
 	   (tfm:u16-overflow #'collect-and-cancel)
@@ -67,7 +68,6 @@ Otherwise, return a list of conditions raised during loading."
 	   ;; Single context recovery (non ambiguous).
 	   (tfm:invalid-table-start #'collect-and-set-to-zero)
 	   (tfm:fix-word-overflow #'collect-and-set-to-zero)
-	   (tfm:invalid-char-info #'collect-and-set-to-zero)
 	   (tfm:character-list-cycle
 	     (collect-and-restart-with tfm:discard-next-character))
 	   (tfm:invalid-ligature-opcode #'collect-and-discard-ligature)
