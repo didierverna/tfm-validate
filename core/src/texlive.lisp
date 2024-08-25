@@ -197,6 +197,42 @@ Rendering is done on *STANDARD-OUTPUT*."
   (format t "        </table>~%	</td>~%"))
 
 
+;; --------------------------------------------------------------------------
+;; Times Index
+;; --------------------------------------------------------------------------
+
+(defun build-times-index-file
+    (output-directory cts year total skipped caught warnings errors
+     reports directory
+     &aux (html (make-pathname :type "html")))
+  "Build the TeX Live TFM compliance reports times index file."
+  (setq reports
+	(mapcar (lambda (report)
+		  (cons (file-write-date
+			 (merge-pathnames (car report) directory))
+			report))
+	  reports))
+  (setq reports (stable-sort reports #'> :key #'car))
+  (with-open-file (*standard-output*
+		   (merge-pathnames (make-pathname :name "times" :type "html")
+		     output-directory)
+		   :direction :output
+		   :if-exists :supersede
+		   :if-does-not-exist :create
+		   :external-format :utf-8)
+    (format t (file-contents (merge-pathnames #p"times-index-header.html"
+					      *templates-directory*))
+      year total skipped caught warnings errors cts
+      (version :long) (tfm:version :long))
+    (mapc (lambda (report)
+	    (format t "    <tr><td><a href=\"~A\">~A</a></td><td>~A</td></tr>~%"
+	      (namestring (merge-pathnames html (cadr report)))
+	      (pathname-name (cadr report))
+	      (universal-time-string (car report))))
+      reports)
+    (format t "    </table>~%  </body>~%</html>~%")))
+
+
 
 
 ;; ==========================================================================
@@ -313,8 +349,12 @@ The fonts are found in DIRECTORY/fonts/tfm/."
 	(let ((caught (length reports)))
 	  (build-index-file
 	   "font" output
-	   "Non Compliant Fonts" cts header total skipped caught warnings errors
+	   "Non Compliant Fonts (alphabetic order)"
+	   cts header total skipped caught warnings errors
 	   reports #'reports-index-character #'render-report-index)
+	  (build-times-index-file
+	   output cts header total skipped caught warnings errors
+	   reports directory)
 	  (build-index-file
 	   "issue" output
 	   "Issues" cts header total skipped caught warnings errors
