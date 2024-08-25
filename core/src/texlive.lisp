@@ -203,8 +203,9 @@ Rendering is done on *STANDARD-OUTPUT*."
 ;; Report Rendering
 ;; ==========================================================================
 
-(defun render-report (report output cts)
-  "Generate HTML file for REPORT."
+(defun render-report (report directory output cts)
+  "Render REPORT as HTML file in OUTPUT directory at CTS current time string.
+The corresponding font file is relative to DIRECTORY."
   (let* ((file (merge-pathnames
 		   (merge-pathnames (make-pathname :type "html") (car report))
 		 output))
@@ -227,9 +228,11 @@ Rendering is done on *STANDARD-OUTPUT*."
       (format t (file-contents (merge-pathnames #p"report-header.html"
 						*templates-directory*))
 	root (pathname-name (car report)) (pathname-name (car report)) root
+	cts (version :long) (tfm:version :long)
 	(namestring (car report))
-	(length warnings) (length errors)
-	cts (version :long) (tfm:version :long))
+	(universal-time-string
+	 (file-write-date (merge-pathnames (car report) directory)))
+	(length warnings) (length errors))
       (flet ((report-condition (condition)
 	       (format t "      <h3>~A</h3>~%"
 		 (capitalize (symbol-name (type-of condition))))
@@ -256,8 +259,9 @@ Rendering is done on *STANDARD-OUTPUT*."
 Generate a compliance reports website in OUTPUT directory.
 Advertise TeXlive information with HEADER in index files.
 The fonts are found in DIRECTORY/fonts/tfm/."
+  (setq directory (merge-pathnames #p"fonts/tfm/" directory))
   (multiple-value-bind (reports total)
-      (invalidate-directory (merge-pathnames #p"fonts/tfm/" directory))
+      (invalidate-directory directory)
     (let ((skipped 0))
       (loop :for report :in reports
 	    :if (typep (second report) 'tfm:extended-tfm)
@@ -315,7 +319,7 @@ The fonts are found in DIRECTORY/fonts/tfm/."
 	   "issue" output
 	   "Issues" cts header total skipped caught warnings errors
 	   conditions #'conditions-index-character #'render-condition-index))
-	(mapc (lambda (report) (render-report report output cts))
+	(mapc (lambda (report) (render-report report directory output cts))
 	  reports)))))
 
 (defun check-dirname (string)
