@@ -283,7 +283,7 @@ The fonts are found in DIRECTORY/fonts/tfm/."
       ;; #### NOTE: we're creating the data for the issue index here, because
       ;; it allows us to display all the statistics in both index files, as a
       ;; general summary..
-      (let ((cts (current-time-string))
+      (let ((cts (universal-time-string))
 	    (conditions (make-hash-table :test #'eq))
 	    (warnings 0)
 	    (errors 0))

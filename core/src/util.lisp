@@ -49,22 +49,26 @@
 ;; General
 ;; ==========================================================================
 
-(defun current-time-string ()
-  "Return the current time as a string."
-  (multiple-value-bind
-	(second minute hour date month year day-of-week dst-p tz)
-      (get-decoded-time)
-    (declare (ignore dst-p))
-    (format nil "~A ~A ~2,'0D ~2,'0D:~2,'0D:~2,'0D ~D GMT~@D"
-      (nth day-of-week '("Mon" "Tue" "Wed" "Thu" "Fri" "Sat" "Sun"))
-      (nth (1- month) '("Jan" "Feb" "Mar" "Apr" "May" "Jun" "Jul" "Aug"
-			"Sep" "Oct" "Nov" "Dec"))
-      date
-      hour
-      minute
-      second
-      year
-      (- tz))))
+(defun decoded-time-string
+    (second minute hour date month year day-of-week dst-p tz)
+  "Return decoded time as a string."
+  (declare (ignore dst-p))
+  (format nil "~A ~A ~2,'0D ~2,'0D:~2,'0D:~2,'0D ~D GMT~@D"
+    (nth day-of-week '("Mon" "Tue" "Wed" "Thu" "Fri" "Sat" "Sun"))
+    (nth (1- month) '("Jan" "Feb" "Mar" "Apr" "May" "Jun" "Jul" "Aug"
+		      "Sep" "Oct" "Nov" "Dec"))
+    date
+    hour
+    minute
+    second
+    year
+    (- tz)))
+
+(defun universal-time-string (&optional time)
+  "Return universal TIME (current time by default) as a string."
+  (apply #'decoded-time-string
+    (multiple-value-list
+     (decode-universal-time (or time (get-universal-time))))))
 
 
 
