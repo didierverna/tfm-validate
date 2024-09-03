@@ -357,7 +357,8 @@ The fonts are found in DIRECTORY/fonts/tfm/."
 	   reports directory)
 	  (build-index-file
 	   "issue" output
-	   "Issues" cts header total skipped caught warnings errors
+	   "Issues (alphabetic order)"
+	   cts header total skipped caught warnings errors
 	   conditions #'conditions-index-character #'render-condition-index))
 	(mapc (lambda (report) (render-report report directory output cts))
 	  reports)))))
