@@ -121,7 +121,8 @@ Rendering is done on *STANDARD-OUTPUT* by calling RENDERER for each entry."
 ;; #### NOTE: the entries are already sorted.
 (defun build-index-file
     (type output-directory
-     title cts year total l1-ofm-skipped jfm-skipped caught warnings errors
+     title cts pretty-directory total l1-ofm-skipped jfm-skipped
+     caught warnings errors
      entries index-character-getter index-entry-renderer)
   "Build the TeX Live TFM compliance reports TYPE index file."
   (with-open-file (*standard-output*
@@ -133,8 +134,8 @@ Rendering is done on *STANDARD-OUTPUT* by calling RENDERER for each entry."
 		   :if-exists :supersede
 		   :if-does-not-exist :create
 		   :external-format :utf-8)
-    (render-index-header cts year total l1-ofm-skipped jfm-skipped caught
-			 warnings errors title)
+    (render-index-header cts pretty-directory total l1-ofm-skipped jfm-skipped
+			 caught warnings errors title)
     (loop :with index-character := (funcall index-character-getter entries)
 	  :with next-entries := (cdr entries)
 	  :with length := 1
@@ -205,7 +206,7 @@ Rendering is done on *STANDARD-OUTPUT*."
 ;; --------------------------------------------------------------------------
 
 (defun build-times-index-file
-    (output-directory cts year total l1-ofm-skipped jfm-skipped
+    (output-directory cts pretty-directory total l1-ofm-skipped jfm-skipped
      caught warnings errors reports directory
      &aux (html (make-pathname :type "html")))
   "Build the TeX Live TFM compliance reports times index file."
@@ -225,7 +226,8 @@ Rendering is done on *STANDARD-OUTPUT*."
 		   :external-format :utf-8)
     (format t (file-contents (merge-pathnames #p"times-index-header.html"
 					      *templates-directory*))
-      year total l1-ofm-skipped jfm-skipped caught warnings errors cts
+      pretty-directory total l1-ofm-skipped jfm-skipped
+      caught warnings errors cts
       (version :long) (tfm:version :long))
     (mapc (lambda (report)
 	    (format t "    <tr><td><a href=\"~A\">~A</a></td><td>~A</td></tr>~%"
@@ -293,81 +295,96 @@ The corresponding font file is relative to DIRECTORY."
 ;; Entry Point
 ;; ==========================================================================
 
-(defun invalidate-texlive-directory (directory output header)
-  "Evaluate TeXlive DIRECTORY's conformance to the TFM format.
+(defun invalidate-texlive-directory
+    (directory output pretty-directory &aux reports total)
+  "Evaluate TeXlive DIRECTORY's conformance to the TFM formats.
+This includes plain TFM, OFM, and JFM.
 Generate a compliance reports website in OUTPUT directory.
-Advertise TeXlive information with HEADER in index files.
-The fonts are found in DIRECTORY/fonts/tfm/."
-  (setq directory (merge-pathnames #p"fonts/tfm/" directory))
-  (multiple-value-bind (reports total)
-      (invalidate-directory directory)
-    (let ((l1-ofm-skipped 0)
-	  (jfm-skipped 0))
-      (loop :for report :in reports
-	    :if (typep (second report) 'tfm:extended-tfm)
-	      :do (if (string= (tfm:value (second report)) "JFM")
-		    (incf jfm-skipped)
-		    (incf l1-ofm-skipped))
-	    :else :collect report :into retained
-	    :finally (setq reports retained))
-      (setq reports (sort reports #'string-lessp :key #'car))
-      (setq reports (stable-sort reports #'string-lessp
-				 :key (lambda (report)
-					(pathname-name (car report)))))
-      (renew-directories output)
-      (copy-style-sheets output)
-      (with-open-file (*standard-output*
-		       (merge-pathnames
-			   (make-pathname :name "index" :type "html")
-			 output)
-		       :direction :output
-		       :if-exists :supersede
-		       :if-does-not-exist :create
-		       :external-format :utf-8)
-	(format t "~
+Advertise TeXlive information with PRETTY-DIRECTORY in index files.
+The fonts checked by this function will be looked up in DIRECTORY/fonts/tfm/
+and DIRECTORY/fonts/ofm/."
+  (multiple-value-bind (tfm-reports tfm-total)
+      (invalidate-directory (merge-pathnames #p"fonts/tfm/" directory))
+    (mapc (lambda (report)
+	    (setf (car report) (concatenate 'string "tfm/" (car report))))
+      tfm-reports)
+    (multiple-value-bind (ofm-reports ofm-total)
+	(invalidate-directory (merge-pathnames #p"fonts/ofm/" directory))
+      (mapc (lambda (report)
+	      (setf (car report) (concatenate 'string "ofm/" (car report))))
+	ofm-reports)
+      (setq reports (append ofm-reports tfm-reports))
+      (setq total (+ ofm-total tfm-total))))
+  (let ((l1-ofm-skipped 0)
+	(jfm-skipped 0))
+    (loop :for report :in reports
+	  :if (typep (second report) 'tfm:extended-tfm)
+	    :do (if (string= (tfm:value (second report)) "JFM")
+		  (incf jfm-skipped)
+		  (incf l1-ofm-skipped))
+	  :else :collect report :into retained
+	  :finally (setq reports retained))
+    (setq reports (sort reports #'string-lessp :key #'car))
+    (setq reports (stable-sort reports #'string-lessp
+			       :key (lambda (report)
+				      (pathname-name (car report)))))
+    (renew-directories output)
+    (copy-style-sheets output)
+    (with-open-file (*standard-output*
+		     (merge-pathnames
+			 (make-pathname :name "index" :type "html")
+		       output)
+		     :direction :output
+		     :if-exists :supersede
+		     :if-does-not-exist :create
+		     :external-format :utf-8)
+      (format t "~
 <meta http-equiv=\"refresh\" content=\"0;url=fonts.html\">~%"))
-      ;; #### NOTE: we're creating the data for the issue index here, because
-      ;; it allows us to display all the statistics in both index files, as a
-      ;; general summary..
-      (let ((cts (universal-time-string))
-	    (conditions (make-hash-table :test #'eq))
-	    (warnings 0)
-	    (errors 0))
-	(mapc (lambda (report)
-		(mapc (lambda (condition)
-			(setf (gethash (type-of condition) conditions)
-			      (pushnew (car report)
-				       (gethash (type-of condition)
-						conditions))))
-		  (cdr report)))
-	  reports)
-	(setq conditions
-	      (sort (loop :for key :being :the :hash-keys :in conditions
-			    :using (hash-value value)
-			  :if (subtypep key 'tfm:tfm-compliance-warning)
-			    :do (incf warnings)
-			  :else
-			    :do (incf errors)
-			  :collect (cons (capitalize (symbol-name key))
-					 (nreverse value)))
-		  #'string-lessp
-		:key #'car))
-	(let ((caught (length reports)))
-	  (build-index-file
-	   "font" output
-	   "Non Compliant Fonts (alphabetic order)"
-	   cts header total l1-ofm-skipped jfm-skipped caught warnings errors
-	   reports #'reports-index-character #'render-report-index)
-	  (build-times-index-file
-	   output cts header total l1-ofm-skipped jfm-skipped caught warnings
-	   errors reports directory)
-	  (build-index-file
-	   "issue" output
-	   "Issues (alphabetic order)"
-	   cts header total l1-ofm-skipped jfm-skipped caught warnings errors
-	   conditions #'conditions-index-character #'render-condition-index))
-	(mapc (lambda (report) (render-report report directory output cts))
-	  reports)))))
+    ;; #### NOTE: we're creating the data for the issue index here, because it
+    ;; allows us to display all the statistics in both index files, as a
+    ;; general summary..
+    (let ((cts (universal-time-string))
+	  (conditions (make-hash-table :test #'eq))
+	  (warnings 0)
+	  (errors 0))
+      (mapc (lambda (report)
+	      (mapc (lambda (condition)
+		      (setf (gethash (type-of condition) conditions)
+			    (pushnew (car report)
+				     (gethash (type-of condition)
+					      conditions))))
+		(cdr report)))
+	reports)
+      (setq conditions
+	    (sort (loop :for key :being :the :hash-keys :in conditions
+			  :using (hash-value value)
+			:if (subtypep key 'tfm:tfm-compliance-warning)
+			  :do (incf warnings)
+			:else
+			  :do (incf errors)
+			:collect (cons (capitalize (symbol-name key))
+				       (nreverse value)))
+		#'string-lessp
+	      :key #'car))
+      (setq directory (merge-pathnames #p"fonts/" directory))
+      (let ((caught (length reports)))
+	(build-index-file
+	 "font" output
+	 "Non Compliant Fonts (alphabetic order)"
+	 cts pretty-directory total l1-ofm-skipped jfm-skipped
+	 caught warnings errors
+	 reports #'reports-index-character #'render-report-index)
+	(build-times-index-file
+	 output cts pretty-directory total l1-ofm-skipped jfm-skipped
+	 caught warnings errors reports directory)
+	(build-index-file
+	 "issue" output
+	 "Issues (alphabetic order)"
+	 cts pretty-directory total l1-ofm-skipped jfm-skipped
+	 caught warnings errors
+	 conditions #'conditions-index-character #'render-condition-index))
+      (mapc (lambda (report) (render-report report directory output cts))
+	reports))))
 
 (defun check-dirname (string)
   "Make sure that STRING ends with a slash. Return checked STRING."
@@ -396,13 +413,15 @@ The fonts are found in DIRECTORY/fonts/tfm/."
 	  (output
 	   (merge-pathnames #p"tfm-validate/" (user-homedir-pathname))
 	   outputp)
-     &aux header)
-  "Evaluate a TeXlive installation's conformance to the TFM format.
+     &aux pretty-directory)
+  "Evaluate a TeXlive installation's conformance to TFM formats.
+This includes plain TFM, OFM, and JFM.
 Generate a compliance reports website in OUTPUT directory
 (~/tfm-validate/ by default).
 
-The fonts checked by this function must be located in DIRECTORY/fonts/tfm/.
-If DIRECTORY is not provided, the location is determined as follows.
+The fonts checked by this function will be looked up in DIRECTORY/fonts/tfm/
+and DIRECTORY/fonts/ofm/. If DIRECTORY is not provided, the location is
+determined as follows.
 
 - The TeXlive installation's root directory may be specified by ROOT.
   Otherwise, it is determined by calling 'kpsewhich', and if that fails, it
@@ -418,7 +437,7 @@ If DIRECTORY is not provided, the location is determined as follows.
   (cond
     (directoryp
      (setq directory (check-dirname directory))
-     (setq header directory))
+     (setq pretty-directory directory))
     (t
      (cond
        (rootp
@@ -433,11 +452,11 @@ If DIRECTORY is not provided, the location is determined as follows.
 		  ;; There's a newline at the end, but no slash.
 		  (nsubstitute #\/ #\Newline result)
 		  "/usr/local/texlive/")))))
-     (setq header (ecase fonts
-		    (:local "texmf-local/")
-		    (:var (format nil "~A/texmf-var/" year))
-		    (:dist (format nil "~A/texmf-dist/" year))))
-     (setq directory (format nil "~A~A" root header))))
-  (invalidate-texlive-directory directory output header))
+     (setq pretty-directory (ecase fonts
+			      (:local "texmf-local/")
+			      (:var (format nil "~A/texmf-var/" year))
+			      (:dist (format nil "~A/texmf-dist/" year))))
+     (setq directory (format nil "~A~A" root pretty-directory))))
+  (invalidate-texlive-directory directory output pretty-directory))
 
 ;;; texlive.lisp ends here
