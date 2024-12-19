@@ -119,7 +119,11 @@ If all files are compliant, the first value is NIL."
 	      (when conditions
 		(push (cons (enough-namestring file directory) conditions)
 		      reports)))
-	(uiop:directory-files sub-directory "*.tfm"))))
+	(remove-if-not (lambda (extension)
+			 (member extension '("tfm" "ofm")
+				 :test #'string-equal))
+	    (uiop:directory-files sub-directory)
+	  :key #'pathname-type))))
   (values reports total))
 
 ;;; validate.lisp ends here
