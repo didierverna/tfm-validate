@@ -30,7 +30,7 @@
 
 
 (defun invalidate-font (file &aux conditions)
-  "Evaluate FILE's conformance to the TeX Font Metrics format.
+  "Evaluate FILE's conformance to the TFM, OFM, or JFM format.
 If FILE is loaded without any warnings or errors, return NIL.
 Otherwise, return a list of conditions raised during loading."
   (labels ((collect (condition) (push condition conditions))
@@ -103,8 +103,9 @@ Otherwise, return a list of conditions raised during loading."
   (nreverse conditions))
 
 (defun invalidate-directory (directory &aux reports (total 0))
-  "Evaluate DIRECTORY's conformance to the TeX Font Metrics format.
-Call INVALIDATE-FONT on every TFM file recursively found in DIRECTORY.
+  "Evaluate DIRECTORY's conformance to the TFM, OFM, or JFM  format.
+Call INVALIDATE-FONT on every font file recursively found in DIRECTORY.
+The files in question must have extension .tfm or .ofm (case insensitive).
 Return two values:
 - a list of the form ((FILE CONDITIONS...) (FILE CONDITIONS...) ...)
   where FILE is a namestring relative to DIRECTORY, and CONDITIONS are those
@@ -119,11 +120,9 @@ If all files are compliant, the first value is NIL."
 	      (when conditions
 		(push (cons (enough-namestring file directory) conditions)
 		      reports)))
-	(remove-if-not (lambda (extension)
-			 (member extension '("tfm" "ofm")
-				 :test #'string-equal))
-	    (uiop:directory-files sub-directory)
-	  :key #'pathname-type))))
+	;; #### NOTE: this pattern is probably not portable, but it's
+	;; sufficient for our current use cases.
+	(uiop:directory-files sub-directory "*.[tToO][fF][mM]"))))
   (values reports total))
 
 ;;; validate.lisp ends here
