@@ -83,8 +83,10 @@ Otherwise, return a list of conditions raised during loading."
 	   (tfm:invalid-table-index
 	     (lambda (condition)
 	       (let ((restart
-		       (or (find-restart 'tfm:abort-lig/kern-program condition)
-			   (find-restart 'tfm:discard-extension-recipe condition)
+		       (or (find-restart 'tfm:abort-lig/kern-program
+					 condition)
+			   (find-restart 'tfm:discard-extension-recipe
+					 condition)
 			   (find-restart 'tfm:discard-kerning condition)
 			   (find-restart 'tfm:set-to-zero condition))))
 		 (collect condition)
@@ -95,12 +97,11 @@ Otherwise, return a list of conditions raised during loading."
 		       (or (find-restart 'tfm:discard-ligature condition)
 			   (find-restart 'tfm:discard-next-character condition)
 			   (find-restart 'tfm:discard-kerning condition)
-			   (find-restart 'tfm:discard-extension-recipe condition)
+			   (find-restart 'tfm:discard-extension-recipe
+					 condition)
 			   (find-restart 'tfm:cancel-loading condition))))
 		 (collect condition)
-		 (invoke-restart restart))))
-
-	   )
+		 (invoke-restart restart)))))
 	(tfm:load-font file))))
   (nreverse conditions))
 
