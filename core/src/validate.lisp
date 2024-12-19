@@ -59,11 +59,13 @@ Otherwise, return a list of conditions raised during loading."
 	   (tfm:tfm-compliance-warning #'collect-and-muffle)
 	   (tfm:spurious-char-info #'collect-and-muffle)
 	   ;; Non-recoverable errors.
-	   (tfm:file-underflow #'collect-and-cancel)
+	   (tfm:invalid-ofm-level #'collect-and-cancel)
 	   (tfm:u16-overflow #'collect-and-cancel)
+	   (tfm:file-underflow #'collect-and-cancel)
 	   (tfm:invalid-header-length #'collect-and-cancel)
 	   (tfm:invalid-character-range #'collect-and-cancel)
 	   (tfm:invalid-table-length #'collect-and-cancel)
+	   ;; #### NOTE: this one also catches the level 0 OFM equivalent.
 	   (tfm:invalid-section-lengths #'collect-and-cancel)
 	   ;; Single context recovery (non ambiguous).
 	   (tfm:invalid-table-start #'collect-and-set-to-zero)
