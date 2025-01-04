@@ -57,7 +57,6 @@ Otherwise, return a list of conditions raised during loading."
 	  ;; Warnings.
 	  ((tfm:extended-tfm #'collect-and-muffle)
 	   (tfm:tfm-compliance-warning #'collect-and-muffle)
-	   (tfm:spurious-char-info #'collect-and-muffle)
 	   ;; Non-recoverable errors.
 	   (tfm:file-underflow #'collect-and-cancel)
 	   (tfm:u16-overflow #'collect-and-cancel)
