@@ -95,9 +95,7 @@ Otherwise, return a list of conditions raised during loading."
 			   (find-restart 'tfm:discard-extension-recipe condition)
 			   (find-restart 'tfm:cancel-loading condition))))
 		 (collect condition)
-		 (invoke-restart restart))))
-
-	   )
+		 (invoke-restart restart)))))
 	(tfm:load-font file))))
   (nreverse conditions))
 
