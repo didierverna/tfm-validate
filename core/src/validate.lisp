@@ -83,7 +83,7 @@ Otherwise, return a list of conditions raised during loading."
 	       (let ((restart
 		       (or (find-restart 'tfm:abort-lig/kern-program condition)
 			   (find-restart 'tfm:discard-extension-recipe condition)
-			   (find-restart 'tfm:discard-kerning condition)
+			   (find-restart 'tfm:discard-kern condition)
 			   (find-restart 'tfm:set-to-zero condition))))
 		 (collect condition)
 		 (invoke-restart restart))))
@@ -92,7 +92,7 @@ Otherwise, return a list of conditions raised during loading."
 	       (let ((restart
 		       (or (find-restart 'tfm:discard-ligature condition)
 			   (find-restart 'tfm:discard-next-character condition)
-			   (find-restart 'tfm:discard-kerning condition)
+			   (find-restart 'tfm:discard-kern condition)
 			   (find-restart 'tfm:discard-extension-recipe condition)
 			   (find-restart 'tfm:cancel-loading condition))))
 		 (collect condition)
