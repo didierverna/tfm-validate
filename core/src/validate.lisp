@@ -1,6 +1,6 @@
 ;;; validate.lisp --- Validation
 
-;; Copyright (C) 2024 Didier Verna
+;; Copyright (C) 2024, 2025 Didier Verna
 
 ;; Author: Didier Verna <didier@didierverna.net>
 
