@@ -1,6 +1,6 @@
 ;;; version.lisp --- TFM Validate version management
 
-;; Copyright (C) 2024 Didier Verna
+;; Copyright (C) 2024, 2025 Didier Verna
 
 ;; Author: Didier Verna <didier@didierverna.net>
 
@@ -31,7 +31,7 @@
 
 
 ;; Copyright years
-(defvar *copyright-years* "2024"
+(defvar *copyright-years* "2024, 2025"
   "A string denoting the copyright years for the whole project.")
 
 
@@ -41,7 +41,7 @@
 (defparameter *release-major-level* 1
   "The major level of this release.")
 
-(defparameter *release-minor-level* 1
+(defparameter *release-minor-level* 2
   "The minor level of this release.")
 
 (defparameter *release-status* :patchlevel
@@ -50,7 +50,7 @@
 (defparameter *release-status-level* 0
   "The status level of this release.")
 
-(defparameter *release-name* "QT Cloistered Monk"
+(defparameter *release-name* "Early Gothic"
   "The name of this release.
 The general naming theme for TFM Validate is \"Blackletter Fonts\",
 from the LaTeX Font Catalogue.
