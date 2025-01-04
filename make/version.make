@@ -1,3 +1,3 @@
-LONG_VERSION    := 1.2 "Early Gothic"
-SHORT_VERSION   := 1.2
+LONG_VERSION    := 2.0 "Fraktur"
+SHORT_VERSION   := 2.0
 COPYRIGHT_YEARS := 2024, 2025
