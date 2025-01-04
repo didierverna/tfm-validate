@@ -1,3 +1,6 @@
+# Version 2.0
+- Update to TFM version 2.0.
+
 ## Version 1.2
 - Add a chronological font index.
 - Advertize fonts modtimes in font reports.
