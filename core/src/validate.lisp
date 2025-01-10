@@ -60,6 +60,7 @@ Otherwise, return a list of conditions raised during loading."
 	   ;; Non-recoverable errors.
 	   (tfm:invalid-ofm-level #'collect-and-cancel)
 	   (tfm:u16-overflow #'collect-and-cancel)
+	   (tfm:u32-overflow #'collect-and-cancel)
 	   (tfm:file-underflow #'collect-and-cancel)
 	   (tfm:invalid-header-length #'collect-and-cancel)
 	   (tfm:invalid-character-range #'collect-and-cancel)
