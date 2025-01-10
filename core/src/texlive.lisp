@@ -226,8 +226,8 @@ Rendering is done on *STANDARD-OUTPUT*."
 		   :external-format :utf-8)
     (format t (file-contents (merge-pathnames #p"times-index-header.html"
 					      *templates-directory*))
-      pretty-directory total l1-ofm-skipped jfm-skipped
-      caught warnings errors cts
+      pretty-directory total (+ l1-ofm-skipped jfm-skipped)
+      l1-ofm-skipped jfm-skipped caught warnings errors cts
       (version :long) (tfm:version :long))
     (mapc (lambda (report)
 	    (format t "    <tr><td><a href=\"~A\">~A</a></td><td>~A</td></tr>~%"
