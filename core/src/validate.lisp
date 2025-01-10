@@ -55,7 +55,7 @@ Otherwise, return a list of conditions raised during loading."
 		    (invoke-restart ',restart))))
       (handler-bind
 	  ;; Warnings.
-	  ((tfm:extended-tfm #'collect-and-muffle)
+	  ((tfm:unsupported-format #'collect-and-muffle)
 	   (tfm:tfm-compliance-warning #'collect-and-muffle)
 	   ;; Non-recoverable errors.
 	   (tfm:invalid-ofm-level #'collect-and-cancel)

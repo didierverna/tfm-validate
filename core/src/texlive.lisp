@@ -318,10 +318,10 @@ and DIRECTORY/fonts/ofm/."
   (let ((l1-ofm-skipped 0)
 	(jfm-skipped 0))
     (loop :for report :in reports
-	  :if (typep (second report) 'tfm:extended-tfm)
-	    :do (if (string= (tfm:value (second report)) "JFM")
-		  (incf jfm-skipped)
-		  (incf l1-ofm-skipped))
+	  :if (typep (second report) 'tfm:unsupported-format)
+	    :do (ecase (tfm:fmt (second report))
+		  (:o1 l1-ofm-skipped)
+		  (:ofm (incf jfm-skipped)))
 	  :else :collect report :into retained
 	  :finally (setq reports retained))
     (setq reports (sort reports #'string-lessp :key #'car))
