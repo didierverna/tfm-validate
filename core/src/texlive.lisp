@@ -62,12 +62,12 @@
 ;; ==========================================================================
 
 (defun render-index-header
-    (cts year total l1-ofm-skipped jfm-skipped caught warnings errors type
-     &aux (skipped (+ l1-ofm-skipped jfm-skipped)))
+    (cts year total ofm1-skipped jfm-skipped caught warnings errors type
+     &aux (skipped (+ ofm1-skipped jfm-skipped)))
   "Render index file's header to standard output."
   (format t (file-contents (merge-pathnames #p"index-header.html"
 					    *templates-directory*))
-    year total skipped skipped l1-ofm-skipped jfm-skipped
+    year total skipped skipped ofm1-skipped jfm-skipped
     caught warnings errors
     cts (version :long) (tfm:version :long)
     type))
@@ -122,7 +122,7 @@ Rendering is done on *STANDARD-OUTPUT* by calling RENDERER for each entry."
 ;; #### NOTE: the entries are already sorted.
 (defun build-index-file
     (type output-directory
-     title cts pretty-directory total l1-ofm-skipped jfm-skipped
+     title cts pretty-directory total ofm1-skipped jfm-skipped
      caught warnings errors
      entries index-character-getter index-entry-renderer)
   "Build the TeX Live TFM compliance reports TYPE index file."
@@ -135,7 +135,7 @@ Rendering is done on *STANDARD-OUTPUT* by calling RENDERER for each entry."
 		   :if-exists :supersede
 		   :if-does-not-exist :create
 		   :external-format :utf-8)
-    (render-index-header cts pretty-directory total l1-ofm-skipped jfm-skipped
+    (render-index-header cts pretty-directory total ofm1-skipped jfm-skipped
 			 caught warnings errors title)
     (loop :with index-character := (funcall index-character-getter entries)
 	  :with next-entries := (cdr entries)
@@ -207,10 +207,10 @@ Rendering is done on *STANDARD-OUTPUT*."
 ;; --------------------------------------------------------------------------
 
 (defun build-times-index-file
-    (output-directory cts pretty-directory total l1-ofm-skipped jfm-skipped
+    (output-directory cts pretty-directory total ofm1-skipped jfm-skipped
      caught warnings errors reports directory
      &aux (html (make-pathname :type "html"))
-	  (skipped (+ l1-ofm-skipped jfm-skipped)))
+	  (skipped (+ ofm1-skipped jfm-skipped)))
   "Build the TeX Live TFM compliance reports times index file."
   (setq reports
 	(mapcar (lambda (report)
@@ -228,7 +228,7 @@ Rendering is done on *STANDARD-OUTPUT*."
 		   :external-format :utf-8)
     (format t (file-contents (merge-pathnames #p"times-index-header.html"
 					      *templates-directory*))
-      pretty-directory total skipped skipped l1-ofm-skipped jfm-skipped
+      pretty-directory total skipped skipped ofm1-skipped jfm-skipped
       caught warnings errors
       cts (version :long) (tfm:version :long))
     (mapc (lambda (report)
@@ -317,12 +317,12 @@ and DIRECTORY/fonts/ofm/."
 	ofm-reports)
       (setq reports (append ofm-reports tfm-reports))
       (setq total (+ ofm-total tfm-total))))
-  (let ((l1-ofm-skipped 0)
+  (let ((ofm1-skipped 0)
 	(jfm-skipped 0))
     (loop :for report :in reports
 	  :if (typep (second report) 'tfm:unsupported-format)
 	    :do (ecase (tfm:fmt (second report))
-		  (:o1 l1-ofm-skipped)
+		  (:ofm1 ofm1-skipped)
 		  (:jfm (incf jfm-skipped)))
 	  :else :collect report :into retained
 	  :finally (setq reports retained))
@@ -373,16 +373,16 @@ and DIRECTORY/fonts/ofm/."
 	(build-index-file
 	 "font" output
 	 "Non Compliant Fonts (alphabetic order)"
-	 cts pretty-directory total l1-ofm-skipped jfm-skipped
+	 cts pretty-directory total ofm1-skipped jfm-skipped
 	 caught warnings errors
 	 reports #'reports-index-character #'render-report-index)
 	(build-times-index-file
-	 output cts pretty-directory total l1-ofm-skipped jfm-skipped
+	 output cts pretty-directory total ofm1-skipped jfm-skipped
 	 caught warnings errors reports directory)
 	(build-index-file
 	 "issue" output
 	 "Issues (alphabetic order)"
-	 cts pretty-directory total l1-ofm-skipped jfm-skipped
+	 cts pretty-directory total ofm1-skipped jfm-skipped
 	 caught warnings errors
 	 conditions #'conditions-index-character #'render-condition-index))
       (mapc (lambda (report) (render-report report directory output cts))
