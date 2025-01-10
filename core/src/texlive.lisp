@@ -62,13 +62,14 @@
 ;; ==========================================================================
 
 (defun render-index-header
-    (cts year total l1-ofm-skipped jfm-skipped caught warnings errors type)
+    (cts year total l1-ofm-skipped jfm-skipped caught warnings errors type
+     &aux (skipped (+ l1-ofm-skipped jfm-skipped)))
   "Render index file's header to standard output."
   (format t (file-contents (merge-pathnames #p"index-header.html"
 					    *templates-directory*))
-    year total (+ l1-ofm-skipped jfm-skipped) l1-ofm-skipped jfm-skipped
-    caught warnings errors cts
-    (version :long) (tfm:version :long)
+    year total skipped skipped l1-ofm-skipped jfm-skipped
+    caught warnings errors
+    cts (version :long) (tfm:version :long)
     type))
 
 (defun column-lengths (number)
@@ -208,7 +209,8 @@ Rendering is done on *STANDARD-OUTPUT*."
 (defun build-times-index-file
     (output-directory cts pretty-directory total l1-ofm-skipped jfm-skipped
      caught warnings errors reports directory
-     &aux (html (make-pathname :type "html")))
+     &aux (html (make-pathname :type "html"))
+	  (skipped (+ l1-ofm-skipped jfm-skipped)))
   "Build the TeX Live TFM compliance reports times index file."
   (setq reports
 	(mapcar (lambda (report)
@@ -226,9 +228,9 @@ Rendering is done on *STANDARD-OUTPUT*."
 		   :external-format :utf-8)
     (format t (file-contents (merge-pathnames #p"times-index-header.html"
 					      *templates-directory*))
-      pretty-directory total (+ l1-ofm-skipped jfm-skipped)
-      l1-ofm-skipped jfm-skipped caught warnings errors cts
-      (version :long) (tfm:version :long))
+      pretty-directory total skipped skipped l1-ofm-skipped jfm-skipped
+      caught warnings errors
+      cts (version :long) (tfm:version :long))
     (mapc (lambda (report)
 	    (format t "    <tr><td><a href=\"~A\">~A</a></td><td>~A</td></tr>~%"
 	      (namestring (merge-pathnames html (cadr report)))
