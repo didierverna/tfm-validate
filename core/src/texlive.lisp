@@ -321,7 +321,7 @@ and DIRECTORY/fonts/ofm/."
 	  :if (typep (second report) 'tfm:unsupported-format)
 	    :do (ecase (tfm:fmt (second report))
 		  (:o1 l1-ofm-skipped)
-		  (:ofm (incf jfm-skipped)))
+		  (:jfm (incf jfm-skipped)))
 	  :else :collect report :into retained
 	  :finally (setq reports retained))
     (setq reports (sort reports #'string-lessp :key #'car))
