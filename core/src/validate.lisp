@@ -1,6 +1,6 @@
 ;;; validate.lisp --- Validation
 
-;; Copyright (C) 2024 Didier Verna
+;; Copyright (C) 2024, 2025 Didier Verna
 
 ;; Author: Didier Verna <didier@didierverna.net>
 
@@ -57,7 +57,6 @@ Otherwise, return a list of conditions raised during loading."
 	  ;; Warnings.
 	  ((tfm:extended-tfm #'collect-and-muffle)
 	   (tfm:tfm-compliance-warning #'collect-and-muffle)
-	   (tfm:spurious-char-info #'collect-and-muffle)
 	   ;; Non-recoverable errors.
 	   (tfm:invalid-ofm-level #'collect-and-cancel)
 	   (tfm:u16-overflow #'collect-and-cancel)
@@ -83,11 +82,9 @@ Otherwise, return a list of conditions raised during loading."
 	   (tfm:invalid-table-index
 	     (lambda (condition)
 	       (let ((restart
-		       (or (find-restart 'tfm:abort-lig/kern-program
-					 condition)
-			   (find-restart 'tfm:discard-extension-recipe
-					 condition)
-			   (find-restart 'tfm:discard-kerning condition)
+		       (or (find-restart 'tfm:abort-lig/kern-program condition)
+			   (find-restart 'tfm:discard-extension-recipe condition)
+			   (find-restart 'tfm:discard-kern condition)
 			   (find-restart 'tfm:set-to-zero condition))))
 		 (collect condition)
 		 (invoke-restart restart))))
@@ -96,9 +93,8 @@ Otherwise, return a list of conditions raised during loading."
 	       (let ((restart
 		       (or (find-restart 'tfm:discard-ligature condition)
 			   (find-restart 'tfm:discard-next-character condition)
-			   (find-restart 'tfm:discard-kerning condition)
-			   (find-restart 'tfm:discard-extension-recipe
-					 condition)
+			   (find-restart 'tfm:discard-kern condition)
+			   (find-restart 'tfm:discard-extension-recipe condition)
 			   (find-restart 'tfm:cancel-loading condition))))
 		 (collect condition)
 		 (invoke-restart restart)))))
