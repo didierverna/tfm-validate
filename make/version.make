@@ -1,3 +1,3 @@
-LONG_VERSION    := 2.0 "Fraktur"
-SHORT_VERSION   := 2.0
+LONG_VERSION    := 3.0 beta 0 "QT Fraktur"
+SHORT_VERSION   := 3.0b0
 COPYRIGHT_YEARS := 2024, 2025
