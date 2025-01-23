@@ -1,10 +1,11 @@
 # TFM Validate
-TFM (for TeX Font Metrics) is the standard font description format used by
-TeX. The TFM Validate library provides facilities for checking the correctness
-of TFM files and generating non-compliance reports.
+TFM (for TeX Font Metric) is the standard font description format used by TeX.
+The TFM Validate library provides facilities for checking the correctness of
+font files in one of the TFM formats (plain TFM, OFM, or JFM) and generating
+non-compliance reports.
 
 TFM Validate depends on [TFM](https://github.com/didierverna/tfm) for parsing
-TFM files, and couldn't exist without the powerful Common Lisp Condition
+font files, and couldn't exist without the powerful Common Lisp Condition
 System…
 
 
@@ -15,15 +16,15 @@ In your favorite Lisp REPL, type something like this:
 (net.didierverna.tfm-validate:nickname-package)
 ```
 
-You may now check the validity of a TFM file by doing:
+You may now check the validity of a font file by doing:
 ```
-(tfm-validate:invalidate-font "/some/file.tfm")
+(tfm-validate:invalidate-font "/some/font/file.tfm")
 ```
 If the file is valid, this function returns `nil`. Otherwise, it returns a
 list of encountered warnings and errors (Common Lisp conditions are first
 class objects).
 
-You may also call the function `invalidate-directory` to get TFM compliance
+You may also call the function `invalidate-directory` to get non-compliance
 reports for a whole directory tree.
 
 Finally, use the function `invalidate-texlive` to generate a website full of
